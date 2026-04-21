@@ -1,0 +1,47 @@
+{
+  "system_prompt": "You are an AI career intelligence assistant. Analyze job postings and match them against user profiles. Return ONLY valid JSON with no additional text.",
+  "user_prompt_template": "Analyze this job posting against the user profile and return a JSON response.\n\nJob Details:\nTitle: {job_title}\nCompany: {job_company}\nLocation: {job_location}\nDescription: {job_description}\nRequirements: {job_requirements}\n\nUser Profile:\nSkills: {user_skills}\nExperience: {user_experience_years} years\nEducation: {user_education}\nPreferred Roles: {user_preferred_roles}\nPreferred Locations: {user_preferred_locations}\n\nReturn JSON with this exact structure:\n{\n  \"role_classification\": \"string (e.g., DevOps, Cloud Engineer, SRE, Research Associate, PhD Position, Postdoc, etc.)\",\n  \"match_score\": number (0-100),\n  \"extracted_skills\": [\"skill1\", \"skill2\"],\n  \"missing_skills\": [\"skill1\", \"skill2\"],\n  \"summary\": \"string (2-3 sentences)\",\n  \"reasoning\": \"string (why this score, what matches, what's missing)\",\n  \"should_alert\": boolean (true if match_score >= 75)\n}",
+  "response_format": {
+    "role_classification": "string",
+    "match_score": "number",
+    "extracted_skills": "array",
+    "missing_skills": "array",
+    "summary": "string",
+    "reasoning": "string",
+    "should_alert": "boolean"
+  },
+  "role_taxonomy": {
+    "tech_roles": [
+      "DevOps Engineer",
+      "Cloud Engineer",
+      "SRE",
+      "Platform Engineer",
+      "Automation Engineer",
+      "Cloud Support Engineer",
+      "Infrastructure Engineer"
+    ],
+    "academic_roles": [
+      "PhD Position",
+      "Postdoctoral Researcher",
+      "Research Associate",
+      "Assistant Research Fellow",
+      "Research Assistant",
+      "Fellowship"
+    ],
+    "writing_roles": [
+      "Research Writer",
+      "Academic Writer",
+      "Proposal Writer",
+      "Technical Writer"
+    ],
+    "flexible_roles": [
+      "Part-time",
+      "Freelance",
+      "Contract",
+      "Gig",
+      "Internship",
+      "Remote",
+      "Hybrid"
+    ]
+  }
+}
