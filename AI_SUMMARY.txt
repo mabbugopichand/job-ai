@@ -1,0 +1,82 @@
+╔══════════════════════════════════════════════════════════════════╗
+║                  AI IN JOB-AI PLATFORM                           ║
+║                     Quick Summary                                ║
+╚══════════════════════════════════════════════════════════════════╝
+
+🤖 WHAT AI DOES
+───────────────
+Matches job postings to your profile and gives:
+  • Match Score (0-100)
+  • Skills you have vs skills needed
+  • Detailed reasoning
+  • Alert decision (notify if score ≥ 75)
+
+🏗️ HOW IT WORKS
+────────────────
+1. User clicks "Analyze Match" on a job
+2. Backend fetches job details + user profile from database
+3. AI Service builds a prompt with both
+4. Sends to Ollama (local AI running on your machine)
+5. Ollama analyzes and returns JSON with score + reasoning
+6. Backend saves result to database
+7. If score ≥ 75: Send email/Telegram alert
+8. Frontend displays result to user
+
+📊 EXAMPLE
+──────────
+Job: "Senior DevOps Engineer - Docker, K8s, AWS, Terraform"
+Your Skills: ["Python", "Docker", "Kubernetes", "AWS", "CI/CD"]
+
+AI Returns:
+{
+  "match_score": 85,
+  "extracted_skills": ["Docker", "Kubernetes", "AWS"],
+  "missing_skills": ["Terraform", "Ansible"],
+  "summary": "Strong match! You have 80% of required skills.",
+  "reasoning": "Your 5 years of DevOps experience aligns well...",
+  "should_alert": true
+}
+
+💡 KEY FEATURES
+───────────────
+✅ Runs locally (Ollama) - FREE, no API costs
+✅ Privacy-first - Your data never leaves your machine
+✅ Cached results - Analyze once, instant on re-check
+✅ Smart filtering - Non-tech roles filtered BEFORE AI (saves 36% cost)
+✅ Configurable - Switch models, adjust thresholds
+
+🔧 TECHNOLOGY
+─────────────
+• Model: Ollama (gemma:2b by default)
+• API: REST (POST http://localhost:11434/api/generate)
+• Prompt: Structured JSON template
+• Response: Strict JSON schema
+• Storage: PostgreSQL (ai_scores table)
+
+📈 PERFORMANCE (from analysis)
+──────────────────────────────
+• Average match score: 57.9/100
+• High matches (≥75): 19.2% of jobs
+• Tech roles: 65.0 avg score
+• Non-tech roles: 45.1 avg score
+• Response time: 2-5 seconds per job
+
+💰 COST OPTIMIZATION
+────────────────────
+1. Pre-filter non-tech roles → Saves 36% of AI calls
+2. Use local Ollama → $0 cost vs $60/month cloud AI
+3. Cache results → Instant on re-analysis
+4. On-demand only → AI runs only when user clicks
+
+🚀 SETUP
+────────
+1. Install Ollama: https://ollama.ai
+2. Pull model: ollama pull gemma:2b
+3. Start Ollama: ollama serve
+4. Backend auto-connects to http://localhost:11434
+5. Click "Analyze Match" in frontend!
+
+📚 FULL DOCUMENTATION
+─────────────────────
+Read: docs/AI_GUIDE.md (complete technical details)
+

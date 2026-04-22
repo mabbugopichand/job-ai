@@ -16,6 +16,10 @@ const emailTransporter = nodemailer.createTransport({
   },
 });
 
+function escapeHtml(str: string): string {
+  return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 export async function sendTelegramAlert(chatId: string, job: Job, score: AIScore): Promise<void> {
   if (!telegramBot) return;
 
@@ -33,13 +37,13 @@ export async function sendTelegramAlert(chatId: string, job: Job, score: AIScore
 export async function sendEmailAlert(email: string, job: Job, score: AIScore): Promise<void> {
   const html = `
     <h2>🎯 High Match Job Alert!</h2>
-    <h3>${job.title}</h3>
-    <p><strong>Company:</strong> ${job.company || 'N/A'}</p>
-    <p><strong>Location:</strong> ${job.location || 'N/A'}</p>
+    <h3>${escapeHtml(job.title)}</h3>
+    <p><strong>Company:</strong> ${escapeHtml(job.company || 'N/A')}</p>
+    <p><strong>Location:</strong> ${escapeHtml(job.location || 'N/A')}</p>
     <p><strong>Match Score:</strong> ${score.match_score}%</p>
-    <p>${score.summary}</p>
-    <p><strong>Reasoning:</strong> ${score.reasoning}</p>
-    <p><a href="${job.url}">View Job Posting</a></p>
+    <p>${escapeHtml(score.summary || '')}</p>
+    <p><strong>Reasoning:</strong> ${escapeHtml(score.reasoning || '')}</p>
+    ${job.url ? `<p><a href="${encodeURI(job.url)}">View Job Posting</a></p>` : ''}
   `;
 
   await emailTransporter.sendMail({

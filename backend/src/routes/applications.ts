@@ -15,52 +15,52 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
       [req.userId]
     );
     res.json(result.rows);
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch applications' });
   }
 });
 
 router.post('/', authMiddleware, async (req: AuthRequest, res) => {
   const { job_id, status, applied_date, resume_version, cover_letter, notes } = req.body;
-
+  if (!job_id) return res.status(400).json({ error: 'job_id is required' });
   try {
     const result = await query(
       `INSERT INTO applications (user_id, job_id, status, applied_date, resume_version, cover_letter, notes)
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
       [req.userId, job_id, status || 'applied', applied_date, resume_version, cover_letter, notes]
     );
-    res.json(result.rows[0]);
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
+    res.status(201).json(result.rows[0]);
+  } catch {
+    res.status(500).json({ error: 'Failed to create application' });
   }
 });
 
 router.put('/:id', authMiddleware, async (req: AuthRequest, res) => {
   const { status, notes } = req.body;
-
   try {
     const result = await query(
       `UPDATE applications SET status = COALESCE($1, status), notes = COALESCE($2, notes), updated_at = CURRENT_TIMESTAMP
        WHERE id = $3 AND user_id = $4 RETURNING *`,
       [status, notes, req.params.id, req.userId]
     );
+    if (!result.rows[0]) return res.status(404).json({ error: 'Application not found' });
     res.json(result.rows[0]);
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
+  } catch {
+    res.status(500).json({ error: 'Failed to update application' });
   }
 });
 
 router.post('/saved', authMiddleware, async (req: AuthRequest, res) => {
   const { job_id, notes } = req.body;
-
+  if (!job_id) return res.status(400).json({ error: 'job_id is required' });
   try {
     const result = await query(
       'INSERT INTO saved_jobs (user_id, job_id, notes) VALUES ($1, $2, $3) ON CONFLICT (user_id, job_id) DO NOTHING RETURNING *',
       [req.userId, job_id, notes]
     );
-    res.json(result.rows[0]);
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
+    res.status(201).json(result.rows[0] || { message: 'Already saved' });
+  } catch {
+    res.status(500).json({ error: 'Failed to save job' });
   }
 });
 
@@ -76,8 +76,8 @@ router.get('/saved', authMiddleware, async (req: AuthRequest, res) => {
       [req.userId]
     );
     res.json(result.rows);
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch saved jobs' });
   }
 });
 

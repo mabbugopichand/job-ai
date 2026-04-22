@@ -6,26 +6,45 @@ import { sendTelegramAlert, sendEmailAlert } from '../services/notification.serv
 
 const router = Router();
 
+const INGEST_SECRET = process.env.INGEST_SECRET;
+
 router.post('/ingest', async (req, res) => {
-  const jobs = req.body.jobs;
-  try {
-    const inserted = [];
-    for (const job of jobs) {
-      const dedup_key = `${job.source_id}-${job.title}-${job.company}`.toLowerCase();
-      const result = await query(
-        `INSERT INTO jobs (source_id, external_id, title, company, location, work_mode, role_type,
-         employment_type, salary_min, salary_max, description, requirements, url, posted_date, dedup_key, raw_data)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-         ON CONFLICT (dedup_key) DO NOTHING RETURNING id`,
-        [job.source_id, job.external_id, job.title, job.company, job.location, job.work_mode,
-         job.role_type, job.employment_type, job.salary_min, job.salary_max, job.description,
-         job.requirements, job.url, job.posted_date, dedup_key, JSON.stringify(job.raw_data || {})]
-      );
-      if (result.rows.length > 0) inserted.push(result.rows[0].id);
+  if (INGEST_SECRET) {
+    const provided = req.headers['x-ingest-secret'];
+    if (provided !== INGEST_SECRET) {
+      return res.status(401).json({ error: 'Unauthorized' });
     }
-    res.json({ inserted: inserted.length, job_ids: inserted });
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
+  }
+
+  const jobs = req.body.jobs;
+  
+  if (!Array.isArray(jobs) || jobs.length === 0) {
+    return res.status(400).json({ error: 'Jobs array is required' });
+  }
+
+  if (jobs.length > 500) {
+    return res.status(400).json({ error: 'Maximum 500 jobs per request' });
+  }
+  
+  try {
+    const startTime = Date.now();
+    const result = await query(
+      'SELECT * FROM bulk_insert_jobs($1::JSONB)',
+      [JSON.stringify(jobs)]
+    );
+    const duration = Date.now() - startTime;
+    const stats = result.rows[0];
+    res.json({
+      inserted: stats.inserted_count,
+      updated: stats.updated_count,
+      skipped: stats.skipped_count,
+      total: jobs.length,
+      duration_ms: duration,
+      jobs_per_second: Math.round((jobs.length / duration) * 1000)
+    });
+  } catch (error) {
+    console.error('Bulk insert error:', error);
+    res.status(500).json({ error: 'Failed to ingest jobs' });
   }
 });
 
@@ -78,8 +97,8 @@ router.get('/search', authMiddleware, async (req: AuthRequest, res) => {
     );
 
     res.json({ jobs: dataResult.rows, total, limit: Number(limit), offset: Number(offset) });
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to search jobs' });
   }
 });
 
@@ -125,8 +144,8 @@ router.get('/analytics', authMiddleware, async (req: AuthRequest, res) => {
       application_status: appStats.rows,
       score_summary: scoreStats.rows[0],
     });
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch analytics' });
   }
 });
 
@@ -141,8 +160,8 @@ router.get('/:id', authMiddleware, async (req: AuthRequest, res) => {
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Job not found' });
     res.json(result.rows[0]);
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch job' });
   }
 });
 
@@ -183,8 +202,8 @@ router.post('/:id/analyze', authMiddleware, async (req: AuthRequest, res) => {
       );
     }
     res.json(analysis);
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
+  } catch (error) {
+    res.status(500).json({ error: 'Analysis failed' });
   }
 });
 

@@ -17,8 +17,8 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
       [req.userId]
     );
     res.json(result.rows);
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch alerts' });
   }
 });
 
@@ -29,8 +29,8 @@ router.put('/:id/read', authMiddleware, async (req: AuthRequest, res) => {
       [req.params.id, req.userId]
     );
     res.json({ success: true });
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
+  } catch {
+    res.status(500).json({ error: 'Failed to update alert' });
   }
 });
 

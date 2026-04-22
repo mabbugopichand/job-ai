@@ -59,28 +59,34 @@ router.post('/upload-resume', authMiddleware, upload.single('resume'), async (re
     if (req.file.mimetype === 'application/pdf' || req.file.originalname.endsWith('.pdf')) {
       const parsed = await pdfParse(req.file.buffer);
       text = parsed.text;
-    } else {
+    } else if (req.file.mimetype === 'text/plain') {
       text = req.file.buffer.toString('utf-8');
+    } else {
+      return res.status(400).json({ error: 'Only PDF and plain text files are supported' });
     }
     res.json(extractAndScore(text));
-  } catch (err: any) {
-    res.status(400).json({ error: 'Failed to parse file: ' + err.message });
+  } catch {
+    res.status(400).json({ error: 'Failed to parse file' });
   }
 });
 
 router.post('/parse-resume', authMiddleware, async (req: AuthRequest, res) => {
   const { resume_text } = req.body;
-  if (!resume_text) return res.status(400).json({ error: 'resume_text is required' });
-  const text = resume_text;
-  res.json(extractAndScore(text));
+  if (!resume_text || typeof resume_text !== 'string') {
+    return res.status(400).json({ error: 'resume_text is required' });
+  }
+  if (resume_text.length > 50000) {
+    return res.status(400).json({ error: 'resume_text too large (max 50000 chars)' });
+  }
+  res.json(extractAndScore(resume_text));
 });
 
 router.get('/', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const result = await query('SELECT * FROM profiles WHERE user_id = $1', [req.userId]);
     res.json(result.rows[0] || {});
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch profile' });
   }
 });
 
@@ -113,10 +119,9 @@ router.put('/', authMiddleware, async (req: AuthRequest, res) => {
        JSON.stringify(preferred_work_modes), min_salary, telegram_chat_id,
        email_notifications, telegram_notifications, req.userId]
     );
-
     res.json(result.rows[0]);
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
+  } catch {
+    res.status(500).json({ error: 'Failed to update profile' });
   }
 });
 

@@ -5,10 +5,16 @@ import path from 'path';
 
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
 const AI_MODEL = process.env.AI_MODEL || 'gemma:2b';
+const OLLAMA_TIMEOUT_MS = 60000;
 
-const promptTemplate = JSON.parse(
-  fs.readFileSync(path.join(__dirname, '../../../ai/prompts/job_analysis.json'), 'utf-8')
-);
+let promptTemplate: any;
+try {
+  promptTemplate = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '../../../ai/prompts/job_analysis.json'), 'utf-8')
+  );
+} catch (e) {
+  throw new Error('Failed to load AI prompt template: ' + (e as Error).message);
+}
 
 export async function analyzeJobMatch(job: Job, profile: Profile): Promise<AIAnalysisResult> {
   const prompt = promptTemplate.user_prompt_template
@@ -29,9 +35,14 @@ export async function analyzeJobMatch(job: Job, profile: Profile): Promise<AIAna
       prompt: `${promptTemplate.system_prompt}\n\n${prompt}`,
       stream: false,
       format: 'json'
-    });
+    }, { timeout: OLLAMA_TIMEOUT_MS });
 
-    const result = JSON.parse(response.data.response);
+    let result: any;
+    try {
+      result = JSON.parse(response.data.response);
+    } catch {
+      throw new Error('AI returned invalid JSON');
+    }
     
     return {
       role_classification: result.role_classification || 'Unknown',
